@@ -40,3 +40,10 @@
 .visit .visit-contact{color:var(--ivory);font-size:1.05rem}.visit-contact a{text-decoration:underline}
 @media(max-width:767px){.brand-logo{width:125px;max-height:49px}.food-stage{height:435px}.food-card{width:72%;max-width:300px;padding:1rem;transform:translateX(calc(-50% + var(--slot)*80%)) translateY(var(--rise)) translateZ(var(--depth)) rotateY(var(--tilt)) scale(var(--scale))}.food-card[data-offset="2"],.food-card[data-offset="-2"]{opacity:0;visibility:hidden}.food-card h3,.menu-detail .food-card h3{font-size:1.55rem}.food-tabs.menu-preview button{padding:.5rem .6rem;font-size:.7rem}.food-controls{gap:.4rem}.cookie-inner{grid-template-columns:1fr;gap:.75rem}.cookie-actions{justify-content:stretch}.cookie-options{grid-template-columns:1fr 1fr}.cookie-options button{grid-column:1/-1}.food-detail.menu-detail>div{padding:0}}
 html[data-motion="off"] .food-card,html[data-motion="off"] .product-art g{transition:none!important}html[data-motion="off"] .art-steam{animation:none!important}
+
+/* Keep the carousel captions compact and prevent original menu rules from leaking into cards. */
+.food-detail.menu-detail .food-card p{color:inherit;margin:0;font:400 clamp(.85rem,1.2vw,1rem)/1.35 Georgia,serif}
+.food-detail.menu-detail .food-card .food-illustration{padding:0}
+.food-detail .food-card .food-illustration>img{display:block;width:100%;height:100%;object-fit:contain}
+.food-detail .food-card .food-illustration>img[hidden]{display:none}
+.food-detail .food-card .food-illustration .art-fallback-hidden{display:none}

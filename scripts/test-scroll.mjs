@@ -25,16 +25,16 @@ try {
       let current=false;
       for(let attempt=0;attempt<24;attempt++){
         try {
-          const response=await page.goto(url+'?release=4.2&attempt='+attempt,{waitUntil:'domcontentloaded',timeout:15000});
-          if(response?.ok() && await page.locator('[data-motion-version="4.2"]').count()){current=true;break;}
-          await page.locator('[data-motion-version="4.2"]').waitFor({timeout:3000});current=true;break;
+          const response=await page.goto(url+'?release=4.3&attempt='+attempt,{waitUntil:'domcontentloaded',timeout:15000});
+          if(response?.ok() && await page.locator('[data-motion-version="4.3"]').count()){current=true;break;}
+          await page.locator('[data-motion-version="4.3"]').waitFor({timeout:3000});current=true;break;
         }catch{}
         await new Promise(resolve=>setTimeout(resolve,3000));
       }
-      assert(current,'live site has not published Motion 4.2 or is inaccessible');
+      assert(current,'live site has not published Motion 4.3 or is inaccessible');
       errors.length=0;
     } else await page.goto(url);
-    await page.waitForSelector('[data-motion-version="4.2"]');
+    await page.waitForSelector('[data-motion-version="4.3"]');
     await page.locator('.cookie-banner').getByRole('button',{name:'Ablehnen',exact:true}).click();
     assert.equal(await page.locator('.cookie-banner').count(),0);
     const consent=await page.evaluate(()=>JSON.parse(localStorage.getItem('mademoiselle-consent-v1')));
@@ -43,7 +43,17 @@ try {
     for(const path of ['brand/favicon.svg','impressum/','datenschutz/']){
       assert((await page.request.get(new URL(path,url).href)).ok(),path+' HTTP');
     }
-    assert(await page.locator('meta[property="og:image"]').getAttribute('content'));
+    const assetManifest=await page.request.get(new URL('brand/assets.json',url).href);
+    assert.equal((await assetManifest.json()).ready,true,'approved brand files published');
+    const og=await page.locator('meta[property="og:image"]').getAttribute('content');
+    assert(og.endsWith('/brand/share.jpg'),'OG points to approved social card');
+    const share=await page.request.get(new URL('brand/share.jpg',url).href);
+    assert(share.ok()&&share.headers()['content-type']?.includes('image/jpeg'));
+    for(const name of ['logo.webp','logo-light.webp','icon-16.png','icon-32.png','icon-192.png','icon-512.png','apple-touch-icon.png','favicon.ico','menu/espresso.webp','menu/macchiato.webp','menu/cappuccino.webp','menu/latte.webp','menu/creme.webp','menu/chocolate.webp','menu/french.webp','menu/croissant.webp','menu/breakfast.webp','menu/vegetarian.webp','menu/yogurt.webp','menu/brunch.webp','menu/cheesecake.webp','menu/choco-cake.webp','menu/lemon.webp','menu/berry.webp','menu/apple.webp','menu/petits.webp']){
+      const response=await page.request.get(new URL('brand/'+name,url).href);
+      assert(response.ok()&&response.headers()['content-type']?.startsWith('image/'),'brand image '+name);
+    }
+    await page.waitForFunction(()=>document.querySelector('.brand-logo').getAttribute('src').endsWith('logo-light.webp'));
     assert.equal(await page.locator('html').getAttribute('data-motion'),'on','motion starts enabled even with system reduced-motion');
     assert.equal(await page.locator('.motion-switch').getAttribute('aria-pressed'),'true');
     await page.emulateMedia({reducedMotion:'no-preference'});
@@ -180,7 +190,7 @@ try {
       await page.screenshot({path:output+'/'+variant+'-'+id+'.png'});
       console.log(variant+' '+id+': '+start.frame+' -> '+end.frame+' -> '+back.frame);
     }
-    assert.equal(await page.locator('[data-motion-version="4.2"]').count(),1);
+    assert.equal(await page.locator('[data-motion-version="4.3"]').count(),1);
     assert.equal(await page.locator('#start + #fruehstueck').count(),1);
     assert.equal(await page.locator('.gallery-card').count(),3);
     assert.equal(await page.locator('.menu-preview button').count(),3);
@@ -190,6 +200,14 @@ try {
     assert.equal(await menu.nth(1).getAttribute('aria-pressed'),'true');
     await menu.nth(2).click();
     assert.equal(await page.locator('.menu-detail').getAttribute('data-category'),'2');
+    await page.waitForFunction(()=>document.querySelector('.food-detail').dataset.art==='generated'&&document.querySelector('.food-card.is-active img')?.naturalWidth>0);
+    const stageFood=page.locator('.food-stage');
+    await stageFood.scrollIntoViewIfNeeded();
+    await page.evaluate(()=>document.activeElement?.blur());
+    await page.mouse.move(1,1);
+    const autoBefore=await page.locator('.food-detail').getAttribute('data-active');
+    await page.waitForFunction(id=>document.querySelector('.food-detail').dataset.active!==id,autoBefore,{timeout:15000});
+    console.log(variant+' carousel autoplay: passed');
     const next=page.getByRole('button',{name:'Nächstes Produkt'});
     const before=await page.locator('.food-detail').getAttribute('data-active');
     await next.click();
@@ -200,10 +218,24 @@ try {
     await menu.nth(0).click();
     await page.getByRole('button',{name:'Schichten entdecken'}).click();
     assert.equal(await page.locator('.food-card.is-active .product-art.exploded').count(),1);
+    await page.waitForFunction(()=>getComputedStyle(document.querySelector('.food-card.is-active .art-glass')).transform!=='none');
+    await page.screenshot({path:output+'/'+variant+'-coffee-layers.png'});
     await page.getByRole('button',{name:'Schichten zusammenfügen'}).click();
     await page.getByRole('button',{name:'Autoplay pausieren'}).click();
     assert.equal(await page.getByRole('button',{name:'Autoplay starten'}).getAttribute('aria-pressed'),'false');
+    await stageFood.scrollIntoViewIfNeeded();
+    await page.waitForFunction(()=>document.querySelector('.food-card.is-active img')?.naturalWidth>0);
     await page.screenshot({path:output+'/'+variant+'-speisekarte.png'});
+    const pausedAt=await page.locator('.food-detail').getAttribute('data-active');
+    await page.evaluate(()=>document.activeElement?.blur());
+    await page.mouse.move(1,1);
+    await page.waitForTimeout(7000);
+    assert.equal(await page.locator('.food-detail').getAttribute('data-active'),pausedAt,'autoplay paused');
+    if(variant==='mobile'){
+      await stageFood.dispatchEvent('touchstart',{changedTouches:[{clientX:260,clientY:300}]});
+      await stageFood.dispatchEvent('touchend',{changedTouches:[{clientX:100,clientY:310}]});
+      assert.notEqual(await page.locator('.food-detail').getAttribute('data-active'),pausedAt,'mobile swipe');
+    }
     console.log(variant+' menu category interactions: passed');
     // Exercise actual computed visual states, not just DOM presence.
     const seekElement = async (selector, viewportFraction) => {
@@ -289,7 +321,7 @@ try {
     await page.locator('.motion-switch').click();
     await page.waitForFunction(()=>document.documentElement.dataset.motion==='off');
     await page.emulateMedia({reducedMotion:'reduce'});
-    await page.goto(url+'?release=4.2&default=on');
+    await page.goto(url+'?release=4.3&default=on');
     await page.waitForFunction(()=>document.documentElement.dataset.motion==='on' && document.querySelector('#start canvas')?.classList.contains('is-ready'));
     assert.equal(await page.locator('.motion-switch').getAttribute('aria-pressed'),'true');
     assert.equal(await page.locator('.cookie-banner').count(),0,'consent persists');

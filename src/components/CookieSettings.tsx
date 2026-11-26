@@ -3,7 +3,7 @@ const KEY='mademoiselle-consent-v1', AGE=180*24*60*60*1000;
 type Choice={statistics:boolean;marketing:boolean;at:number};
 function read():Choice|null{try{const v=JSON.parse(localStorage.getItem(KEY)||'null');return v&&typeof v.statistics==='boolean'&&typeof v.marketing==='boolean'&&Number.isFinite(v.at)&&Date.now()-v.at<AGE&&Date.now()>=v.at?v:null;}catch{return null;}}
 export function CookieSettings(){
- const [open,setOpen]=useState(()=>!read()||new URLSearchParams(location.search).has('cookies')),[settings,setSettings]=useState(false),[statistics,setStatistics]=useState(()=>read()?.statistics??false),[marketing,setMarketing]=useState(()=>read()?.marketing??false);
+ const [open,setOpen]=useState(()=>!read()||new URLSearchParams(location.search).has('cookies')),[settings,setSettings]=useState(()=>new URLSearchParams(location.search).has('cookies')),[statistics,setStatistics]=useState(()=>read()?.statistics??false),[marketing,setMarketing]=useState(()=>read()?.marketing??false);
  useEffect(()=>{const show=()=>{const v=read();setStatistics(v?.statistics??false);setMarketing(v?.marketing??false);setSettings(true);setOpen(true);};window.addEventListener('cafe-cookie-settings',show);return()=>window.removeEventListener('cafe-cookie-settings',show);},[]);
  const save=(s:boolean,m:boolean)=>{try{localStorage.setItem(KEY,JSON.stringify({statistics:s,marketing:m,at:Date.now()}));}catch{}setStatistics(s);setMarketing(m);setOpen(false);setSettings(false);};
  if(!open)return null;

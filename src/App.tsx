@@ -6,7 +6,6 @@ import { MotionSwitch, FullNavigation, Decoration, Speisekarte, pointerMotion, r
 import { motionEnabled, subscribeMotion } from './lib/motion';
 import { BrandLogo } from './components/FoodCarousel';
 import { CookieSettings, CookieLink } from './components/CookieSettings';
-import './brand.css';
 
 const media = import.meta.env.BASE_URL + 'media/';
 const chapters = [
@@ -106,7 +105,7 @@ export default function App() {
     <>
       <a className="skip" href="#content">Zum Inhalt</a>
       <Header />
-      <main ref={main} id="content" data-motion-version="4.2">
+      <main ref={main} id="content" data-motion-version="4.3">
         <ScrollSequence id="start" scene="coffee" priority scrollLength={280} align="left" portalTo="breakfast">
           <p className="eyebrow"><span className="chapter-rule" /> Hildesheim · Café & Genuss</p>
           <h1>Ein kleiner<br/>Moment <i>Paris.</i></h1>
@@ -154,7 +153,7 @@ export default function App() {
           <a className="button button--dark magnetic" onPointerMove={event=>pointerMotion(event,'magnet')} onPointerLeave={event=>resetPointer(event.currentTarget)} href="#start">Zum Anfang <span aria-hidden="true">↑</span></a>
         </section>
       </main>
-      <footer><span>MADEMOISELLE <em>Gourmet Café</em></span><small>Designkonzept · KI-Visualisierungen · Keine offizielle Café-Website</small><small>Konzept: VS Web Studio · Motion 4.2 · Maison Collection</small><div className="footer-legal"><a href="/impressum/">Impressum</a><a href="/datenschutz/">Datenschutz</a><CookieLink/></div></footer>
+      <footer><span>MADEMOISELLE <em>Gourmet Café</em></span><small>Designkonzept · KI-Visualisierungen · Keine offizielle Café-Website</small><small>Konzept: VS Web Studio · Motion 4.3 · Maison Collection</small><div className="footer-legal"><a href="/impressum/">Impressum</a><a href="/datenschutz/">Datenschutz</a><CookieLink/></div></footer>
       <CookieSettings/>
     </>
   );

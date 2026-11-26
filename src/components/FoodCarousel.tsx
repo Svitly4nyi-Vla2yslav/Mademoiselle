@@ -11,7 +11,7 @@ export function useBrandAssets(){
 export function BrandLogo(){const ready=useBrandAssets();return <img className="brand-logo" src={root+(ready?'logo-light.webp':'logo.svg')} alt="Mademoiselle Gourmet Café" width="210" height="76"/>;}
 export function FoodCarousel(){
  const [category,setCategory]=useState(0),[active,setActive]=useState(0),[playing,setPlaying]=useState(true),[hover,setHover]=useState(false),[focus,setFocus]=useState(false),[visible,setVisible]=useState(false),[motion,setMotion]=useState(motionEnabled),[exploded,setExploded]=useState(false);
- const stage=useRef<HTMLDivElement>(null), touch=useRef<number|null>(null);
+ const stage=useRef<HTMLDivElement>(null), touch=useRef<{x:number;y:number}|null>(null);
  const ready=useBrandAssets(), group=items.filter(item=>item.category===category), count=group.length;
  const step=(delta:number)=>{setActive(a=>(a+delta+count)%count);setExploded(false);};
  useEffect(()=>subscribeMotion(()=>setMotion(motionEnabled())),[]);
@@ -21,7 +21,7 @@ export function FoodCarousel(){
  return <div className="food-carousel" aria-label="Animierte Speisekarten-Designstudie">
  <p className="food-caption">La carte · Illustrationen & Ideen</p>
  <div className="menu-preview food-tabs" aria-label="Speisekartenkategorien">{categories.map((name,i)=><button type="button" key={name} aria-pressed={i===category} onClick={()=>{setCategory(i);setActive(0);setExploded(false);}}><small>0{i+1} /</small><span>{name}</span></button>)}</div>
- <div className="menu-detail food-detail" data-category={category} data-active={current.id} data-art={ready?'generated':'svg'} ref={stage} onPointerEnter={e=>{if(e.pointerType==='mouse')setHover(true);}} onPointerLeave={()=>setHover(false)} onFocusCapture={()=>setFocus(true)} onBlurCapture={e=>{if(!e.currentTarget.contains(e.relatedTarget))setFocus(false);}} onTouchStart={e=>touch.current=e.changedTouches[0].clientX} onTouchEnd={e=>{if(touch.current===null)return;const d=e.changedTouches[0].clientX-touch.current;touch.current=null;if(Math.abs(d)>45)step(d<0?1:-1);}}>
+ <div className="menu-detail food-detail" data-category={category} data-active={current.id} data-art={ready?'generated':'svg'} ref={stage} onPointerEnter={e=>{if(e.pointerType==='mouse')setHover(true);}} onPointerLeave={()=>setHover(false)} onFocusCapture={()=>setFocus(true)} onBlurCapture={e=>{if(!e.currentTarget.contains(e.relatedTarget))setFocus(false);}} onTouchStart={e=>touch.current={x:e.changedTouches[0].clientX,y:e.changedTouches[0].clientY}} onTouchCancel={()=>touch.current=null} onTouchEnd={e=>{if(touch.current===null)return;const d=e.changedTouches[0].clientX-touch.current.x, dy=e.changedTouches[0].clientY-touch.current.y;touch.current=null;if(Math.abs(d)>45&&Math.abs(d)>Math.abs(dy)*1.5)step(d<0?1:-1);}}>
   <div className="food-stage" aria-live="off"><div className="food-orbit" aria-hidden="true"/>
    {group.map((item,i)=>{let offset=(i-active+count)%count;if(offset>count/2)offset-=count;const selected=offset===0;return <article key={item.id} className={'food-card'+(selected?' is-active':'')} data-offset={offset} aria-hidden={!selected} style={{'--slot':offset,'--distance':Math.abs(offset),'--depth':-Math.abs(offset)*85+'px','--tilt':offset*-13+'deg','--rise':Math.abs(offset)*18+'px','--scale':1-Math.abs(offset)*.12} as CSSProperties}>
     <span className="food-ornament" aria-hidden="true">❦</span><h3>{item.name}</h3><p>{item.description}</p>
