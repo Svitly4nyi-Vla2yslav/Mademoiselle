@@ -1,8 +1,0 @@
-{
-  "frameCount": 59,
-  "fps": 15,
-  "width": 720,
-  "height": 1280,
-  "pattern": "frame-{index}.webp",
-  "poster": "poster.webp"
-}
