@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { motionEnabled, setMotionEnabled, subscribeMotion } from '../lib/motion';
+import { FoodCarousel } from './FoodCarousel';
 
 const media = import.meta.env.BASE_URL + 'media/';
 const links = [
@@ -40,19 +41,7 @@ export function Decoration() {
     </g><circle cx="130" cy="8" r="3" fill="currentColor"/>
   </svg>;
 }
-const categories = [
-  { title:'Kaffee & Getränke', text:'Zeit für eine kleine Pause.', scene:'coffee', label:'Café-Impression', details:'Kaffee- und Getränke-Kategorie der Designstudie.' },
-  { title:'Frühstück', text:'Ein schöner Start in den Tag.', scene:'breakfast', label:'Frühstücks-Impression', details:'Frühstücks-Kategorie der Designstudie.' },
-  { title:'Süße Momente', text:'Ein Moment zum Genießen.', scene:'interior', label:'Café-Ambiente', details:'Dessert-Kategorie der Designstudie. Originalfotos und Angebot werden nach Freigabe ergänzt.' },
-] as const;
-export function Speisekarte() {
-  const [selected,setSelected] = useState(0);
-  const item=categories[selected];
-  return <div className="menu-experience">
-    <div className="menu-preview" aria-label="Speisekartenkategorien">{categories.map((category,i)=><button type="button" key={category.title} aria-pressed={selected===i} onClick={()=>setSelected(i)}><small>0{i+1} /</small><span>{category.title}</span><b aria-hidden="true">↗</b></button>)}</div>
-    <div className="menu-detail" key={selected} data-category={selected}><picture><source media="(max-width:767px)" srcSet={media+item.scene+'/mobile/poster.webp'}/><img src={media+item.scene+'/desktop/poster.webp'} alt={item.label} loading="lazy"/></picture><div><p className="eyebrow">Carte · 0{selected+1}</p><h3>{item.title}</h3><p>{item.text}</p><small>{item.details}</small><a className="text-link" href="https://cafe-mademoiselle-hildesheim.eatbu.com/?lang=de" target="_blank" rel="noopener noreferrer">Originalwebsite ansehen ↗</a></div></div>
-  </div>;
-}
+export function Speisekarte(){return <FoodCarousel/>;}
 export function pointerMotion(event: PointerEvent<HTMLElement>, kind: 'tilt'|'magnet') {
   if (!motionEnabled() || event.pointerType !== 'mouse') return;
   const el=event.currentTarget, r=el.getBoundingClientRect();

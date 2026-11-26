@@ -48,3 +48,7 @@ Netlify root deployment is explicit in netlify.toml. The header has a visible Mo
 ## Motion 4.1
 
 Motion starts enabled on every fresh load. The visitor can pause all motion with the header switch and resume it manually; operating-system preference changes do not override the switch. The setting is intentionally not persisted across reloads. CI exercises default-on with reduced-motion emulation, manual off/on and reload on both local and live Netlify builds. The explicit pause remains available for motion-sensitive visitors.
+
+## Motion 4.2 — Maison Collection
+
+18 concept items in three categories, rotating responsive carousel, manual controls, autoplay pause, touch navigation, vector drink layers, logo and favicon, share metadata, footer legal drafts, consent settings. Prices are null until confirmed. `public/brand/assets.json` defaults to ready:false; merge the prepared brand asset pack into the repository root to switch to the exact approved transparent WebP artwork and JPEG OG image. Native SVG illustrations remain available for layered interaction and fallback. No analytics, marketing tags or third-party embedded media. Legal pages are drafts; provider identity and hosting details require verification. Existing noindex and Motion 4.1 default-on are preserved. CI checks the local and live release, assets, controls, legal routes and consent persistence.

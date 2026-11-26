@@ -25,16 +25,25 @@ try {
       let current=false;
       for(let attempt=0;attempt<24;attempt++){
         try {
-          const response=await page.goto(url+'?release=4.1&attempt='+attempt,{waitUntil:'domcontentloaded',timeout:15000});
-          if(response?.ok() && await page.locator('[data-motion-version="4.1"]').count()){current=true;break;}
-          await page.locator('[data-motion-version="4.1"]').waitFor({timeout:3000});current=true;break;
+          const response=await page.goto(url+'?release=4.2&attempt='+attempt,{waitUntil:'domcontentloaded',timeout:15000});
+          if(response?.ok() && await page.locator('[data-motion-version="4.2"]').count()){current=true;break;}
+          await page.locator('[data-motion-version="4.2"]').waitFor({timeout:3000});current=true;break;
         }catch{}
         await new Promise(resolve=>setTimeout(resolve,3000));
       }
-      assert(current,'live site has not published Motion 4.1 or is inaccessible');
+      assert(current,'live site has not published Motion 4.2 or is inaccessible');
       errors.length=0;
     } else await page.goto(url);
-    await page.waitForSelector('[data-motion-version="4.1"]');
+    await page.waitForSelector('[data-motion-version="4.2"]');
+    await page.locator('.cookie-banner').getByRole('button',{name:'Ablehnen',exact:true}).click();
+    assert.equal(await page.locator('.cookie-banner').count(),0);
+    const consent=await page.evaluate(()=>JSON.parse(localStorage.getItem('mademoiselle-consent-v1')));
+    assert.equal(consent.statistics,false);assert.equal(consent.marketing,false);
+    assert(await page.locator('.brand-logo').evaluate(async img=>{await img.decode();return img.naturalWidth>0;}));
+    for(const path of ['brand/favicon.svg','impressum/','datenschutz/']){
+      assert((await page.request.get(new URL(path,url).href)).ok(),path+' HTTP');
+    }
+    assert(await page.locator('meta[property="og:image"]').getAttribute('content'));
     assert.equal(await page.locator('html').getAttribute('data-motion'),'on','motion starts enabled even with system reduced-motion');
     assert.equal(await page.locator('.motion-switch').getAttribute('aria-pressed'),'true');
     await page.emulateMedia({reducedMotion:'no-preference'});
@@ -171,7 +180,7 @@ try {
       await page.screenshot({path:output+'/'+variant+'-'+id+'.png'});
       console.log(variant+' '+id+': '+start.frame+' -> '+end.frame+' -> '+back.frame);
     }
-    assert.equal(await page.locator('[data-motion-version="4.1"]').count(),1);
+    assert.equal(await page.locator('[data-motion-version="4.2"]').count(),1);
     assert.equal(await page.locator('#start + #fruehstueck').count(),1);
     assert.equal(await page.locator('.gallery-card').count(),3);
     assert.equal(await page.locator('.menu-preview button').count(),3);
@@ -181,6 +190,19 @@ try {
     assert.equal(await menu.nth(1).getAttribute('aria-pressed'),'true');
     await menu.nth(2).click();
     assert.equal(await page.locator('.menu-detail').getAttribute('data-category'),'2');
+    const next=page.getByRole('button',{name:'Nächstes Produkt'});
+    const before=await page.locator('.food-detail').getAttribute('data-active');
+    await next.click();
+    assert.notEqual(await page.locator('.food-detail').getAttribute('data-active'),before);
+    await page.getByRole('button',{name:'Vorheriges Produkt'}).click();
+    assert.equal(await page.locator('.food-detail').getAttribute('data-active'),before);
+    assert.equal(await page.locator('.food-card').count(),6);
+    await menu.nth(0).click();
+    await page.getByRole('button',{name:'Schichten entdecken'}).click();
+    assert.equal(await page.locator('.food-card.is-active .product-art.exploded').count(),1);
+    await page.getByRole('button',{name:'Schichten zusammenfügen'}).click();
+    await page.getByRole('button',{name:'Autoplay pausieren'}).click();
+    assert.equal(await page.getByRole('button',{name:'Autoplay starten'}).getAttribute('aria-pressed'),'false');
     await page.screenshot({path:output+'/'+variant+'-speisekarte.png'});
     console.log(variant+' menu category interactions: passed');
     // Exercise actual computed visual states, not just DOM presence.
@@ -267,10 +289,15 @@ try {
     await page.locator('.motion-switch').click();
     await page.waitForFunction(()=>document.documentElement.dataset.motion==='off');
     await page.emulateMedia({reducedMotion:'reduce'});
-    await page.goto(url+'?release=4.1&default=on');
+    await page.goto(url+'?release=4.2&default=on');
     await page.waitForFunction(()=>document.documentElement.dataset.motion==='on' && document.querySelector('#start canvas')?.classList.contains('is-ready'));
     assert.equal(await page.locator('.motion-switch').getAttribute('aria-pressed'),'true');
-    console.log(variant+' default-on, manual off/on, system independence and reload: passed');
+    assert.equal(await page.locator('.cookie-banner').count(),0,'consent persists');
+    await page.getByRole('button',{name:'Cookie-Einstellungen',exact:true}).click();
+    await page.locator('.cookie-options').getByLabel('Statistik').check();
+    await page.getByRole('button',{name:'Auswahl speichern'}).click();
+    assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('mademoiselle-consent-v1')).statistics),true);
+    console.log(variant+' brand, menu, privacy and default-on checks: passed');
     await page.close();
   }
 } finally {

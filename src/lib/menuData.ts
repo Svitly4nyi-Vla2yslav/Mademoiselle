@@ -1,0 +1,9 @@
+export const categories = ['Kaffee & Getränke','Frühstück','Kuchen & Desserts'] as const;
+export type MenuItem = { id:string; name:string; description:string; price:number|null; category:number };
+const groups = [
+  [['espresso','Espresso','Kräftiger Kaffee mit goldener Crema.'],['macchiato','Espresso Macchiato','Espresso mit einem Hauch Milchschaum.'],['cappuccino','Cappuccino','Espresso, Milch und feiner Schaum.'],['latte','Latte Macchiato','Milch, Espresso und eine luftige Schaumkrone.'],['creme','Café Crème','Aromatischer Kaffee mit zarter Crema.'],['chocolate','Heiße Schokolade','Schokoladiger Genuss mit cremiger Haube.']],
+  [['french','Französisches Frühstück','Croissant, Butter, Konfitüre und Kaffee.'],['croissant','Croissant & Konfitüre','Blättriges Gebäck mit Fruchtkonfitüre.'],['breakfast','Petit déjeuner','Frühstücksteller mit Obst, Brot, Ei und Getränken.'],['vegetarian','Vegetarisches Frühstück','Avocado, Gemüse und Brot.'],['yogurt','Joghurt & Früchte','Joghurt, Beeren und knuspriges Granola.'],['brunch','Brunch-Teller','Brot, Ei und frische Beilagen.']],
+  [['cheesecake','Cheesecake','Cremige Füllung mit Beerengarnitur.'],['choco-cake','Schokoladenkuchen','Schokoladige Schichten und feine Glasur.'],['lemon','Zitronentarte','Zitronencreme auf goldgelbem Boden.'],['berry','Beerentarte','Fruchtige Beeren auf knusprigem Mürbeteig.'],['apple','Apfelkuchen','Apfelstücke und eine goldene Kruste.'],['petits','Petits Fours','Kleine französisch inspirierte Gebäcke.']]
+];
+export const items:MenuItem[] = groups.flatMap((group,category)=>group.map(([id,name,description])=>({id,name,description,category,price:null})));
+export const priceLabel = (price:number|null) => price===null?'Preis noch offen':new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(price);
