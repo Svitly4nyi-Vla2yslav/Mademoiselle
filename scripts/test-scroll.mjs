@@ -49,19 +49,37 @@ try {
       assert(opacityAtStart>.5 && opacityAtEnd<.05, id+' cinematic title exit');
       await seek(.2);
       if (id === 'start') {
-        const radius = () => stage.evaluate(el=>parseFloat(getComputedStyle(el).getPropertyValue('--portal-radius')));
-        assert.equal(await radius(),0,'portal closed at early scroll');
-        await seek(.85);
-        assert((await radius())>0 && (await radius())<150,'portal opens during scroll');
+        const state = () => stage.evaluate(el=>{
+          const portal = el.querySelector('.scene-portal');
+          const rim = el.querySelector('.scene-liquid-rim');
+          const style = getComputedStyle(portal);
+          return { progress:Number(el.dataset.liquidProgress), mask:style.clipPath, visibility:style.visibility, rim:getComputedStyle(rim).clipPath, rimOpacity:Number(getComputedStyle(rim).opacity) };
+        });
+        assert.equal((await state()).visibility,'hidden','liquid closed at early scroll');
+        await seek(.77);
+        const first = await state();
+        assert(first.progress>0 && first.progress<1 && first.visibility==='visible');
+        assert(first.mask.startsWith('polygon(') && first.mask.split(',').length>=80,'organic outline contains 80 points');
+        assert(first.rim!==first.mask && first.rimOpacity>0,'visible crema edge');
         await page.waitForFunction(()=>document.querySelector('.scene-portal img').naturalWidth>0);
-        await page.screenshot({path:'test-results/'+variant+'-portal-open.png'});
+        await page.screenshot({path:'test-results/'+variant+'-liquid-early.png'});
+        await seek(.85);
+        const second = await state();
+        assert(second.progress>first.progress && second.mask!==first.mask,'liquid grows and changes shape');
+        await page.screenshot({path:'test-results/'+variant+'-liquid-mid.png'});
+        await seek(.95);
+        const late = await state();
+        assert(late.progress>second.progress && late.mask!==second.mask,'liquid expands across viewport');
+        await page.screenshot({path:'test-results/'+variant+'-liquid-late.png'});
+        await seek(.77);
+        assert.equal((await state()).mask,first.mask,'exact same shape at same scroll position in reverse');
         await seek(.2);
-        assert.equal(await radius(),0,'portal closes on reverse');
+        assert.equal((await state()).visibility,'hidden','liquid closes on reverse');
       }
       await page.screenshot({path:'test-results/'+variant+'-'+id+'.png'});
       console.log(variant+' '+id+': '+start.frame+' -> '+end.frame+' -> '+back.frame);
     }
-    assert.equal(await page.locator('[data-motion-version="3.0"]').count(),1);
+    assert.equal(await page.locator('[data-motion-version="3.1"]').count(),1);
     assert.equal(await page.locator('#start + #fruehstueck').count(),1);
     assert.equal(await page.locator('.gallery-card').count(),3);
     assert.equal(await page.locator('.menu-preview article').count(),3);
@@ -74,6 +92,7 @@ try {
     await page.waitForFunction(()=>getComputedStyle(document.querySelector('#start canvas')).display==='none' && document.querySelector('#start img').naturalWidth>0);
     assert.equal(await page.locator('#start .sequence-copy').evaluate(el=>getComputedStyle(el).opacity),'1');
     assert.equal(await page.locator('.scene-portal').evaluate(el=>getComputedStyle(el).display),'none');
+    assert.equal(await page.locator('.scene-liquid-rim').evaluate(el=>getComputedStyle(el).display),'none');
     assert.equal(await page.locator('#fruehstueck').evaluate(el=>getComputedStyle(el).marginTop),'0px');
     await page.close();
   }

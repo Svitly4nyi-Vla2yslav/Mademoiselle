@@ -2,6 +2,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { frameUrl, clampFrame, drawCover, type Manifest, validManifest } from '../lib/sequence';
+import { liquidMask } from '../lib/liquidMask';
 
 gsap.registerPlugin(ScrollTrigger);
 const mediaRoot = import.meta.env.BASE_URL + 'media/';
@@ -36,7 +37,8 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
       delete surface.dataset.frame;
       delete surface.dataset.frameCount;
       delete surface.dataset.variant;
-      for (const key of ['--scene-progress', '--copy-opacity', '--copy-shift', '--camera-scale', '--transition-out', '--transition-in', '--portal-radius', '--portal-ring', '--shade-opacity']) holder.style.removeProperty(key);
+      for (const key of ['--scene-progress', '--copy-opacity', '--copy-shift', '--camera-scale', '--transition-out', '--transition-in', '--portal-radius', '--portal-ring', '--shade-opacity', '--liquid-mask', '--liquid-rim-mask', '--liquid-rim-opacity', '--liquid-visibility']) holder.style.removeProperty(key);
+      delete holder.dataset.liquidProgress;
       if (reduced.matches) return;
       const variant = responsive.matches ? 'mobile' : 'desktop';
       surface.dataset.variant = variant;
@@ -48,6 +50,9 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
       let manifest: Manifest | undefined;
       let target = 0;
       let progress = 0;
+      let portalProgress = 0;
+      let stageWidth = Math.max(1, holder.clientWidth);
+      let stageHeight = Math.max(1, holder.clientHeight);
       let disposed = false;
       let active = false;
       let started = false;
@@ -79,8 +84,20 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
         }
       };
       const scheduleRender = () => { if (!raf && !disposed) raf = requestAnimationFrame(render); };
+      const paintLiquid = () => {
+        if (!portalTo) return;
+        const mask = liquidMask(portalProgress, stageWidth, stageHeight, responsive.matches);
+        holder.style.setProperty('--liquid-mask', mask.image);
+        holder.style.setProperty('--liquid-rim-mask', mask.rim);
+        holder.style.setProperty('--liquid-rim-opacity', String(mask.rimOpacity));
+        holder.style.setProperty('--liquid-visibility', portalProgress > 0 ? 'visible' : 'hidden');
+        holder.dataset.liquidProgress = String(portalProgress);
+      };
       const resize = () => {
         const rect = holder.getBoundingClientRect();
+        stageWidth = Math.max(1, rect.width);
+        stageHeight = Math.max(1, rect.height);
+        paintLiquid();
         const ratio = Math.min(window.devicePixelRatio || 1, responsive.matches ? 1.5 : 2, Math.sqrt(2_500_000 / Math.max(1, rect.width * rect.height)));
         const w = Math.max(1, Math.round(rect.width * ratio));
         const h = Math.max(1, Math.round(rect.height * ratio));
@@ -120,9 +137,11 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
         holder.style.setProperty('--scene-progress', String(p));
         const exit = smooth(.30, .68, p);
         const entry = priority ? 1 : smooth(0, .16, p);
-        const portal = portalTo ? smooth(.69, 1, p) : 0;
-        holder.style.setProperty('--portal-radius', (portal * 150) + '%');
-        holder.style.setProperty('--portal-ring', String(portal > 0 && portal < 1 ? Math.sin(Math.PI * portal) * .65 : 0));
+        const portal = portalTo ? smooth(.66, 1, p) : 0;
+        if (portalTo && portal !== portalProgress) {
+          portalProgress = portal;
+          paintLiquid();
+        }
         holder.style.setProperty('--shade-opacity', String(1 - exit * .78));
         holder.classList.toggle('is-copy-hidden', entry * (1 - exit) < .04);
         if (portalTo) el.classList.toggle('is-past', p >= .9999);
@@ -191,8 +210,9 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
         <div className="sequence-shade" aria-hidden="true" />
         <div className="scene-transition scene-transition--in" aria-hidden="true" />
         <div className="scene-transition scene-transition--out" aria-hidden="true" />
+        {portalTo && <div className="scene-liquid-rim" aria-hidden="true" />}
         {portalTo && (
-          <div className="scene-portal" aria-hidden="true">
+          <div className="scene-portal scene-portal--liquid" aria-hidden="true" data-transition="organic-liquid">
             <picture>
               <source media="(max-width: 767px)" srcSet={mediaRoot + portalTo + '/mobile/poster.webp'} />
               <img src={mediaRoot + portalTo + '/desktop/poster.webp'} alt="" loading="eager" decoding="async" />
@@ -200,7 +220,6 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
             <div className="scene-portal-shade" />
           </div>
         )}
-        {portalTo && <div className="scene-portal-ring" aria-hidden="true" />}
         <div className="sequence-copy">{children}</div>
         <div className="sequence-progress" aria-hidden="true"><span /></div>
       </div>
