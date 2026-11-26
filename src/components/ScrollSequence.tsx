@@ -39,6 +39,8 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
       delete surface.dataset.variant;
       for (const key of ['--scene-progress', '--copy-opacity', '--copy-shift', '--camera-scale', '--transition-out', '--transition-in', '--shade-opacity', '--liquid-mask', '--liquid-rim-mask', '--liquid-rim-opacity', '--liquid-visibility']) holder.style.removeProperty(key);
       delete holder.dataset.liquidProgress;
+      delete holder.dataset.scrollStart;
+      delete holder.dataset.scrollEnd;
       if (reduced.matches) return;
       const variant = responsive.matches ? 'mobile' : 'desktop';
       surface.dataset.variant = variant;
@@ -157,8 +159,14 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
       const trigger = ScrollTrigger.create({
         trigger: el, start: 'top top', end: 'bottom bottom',
         onUpdate: self => update(self.progress),
-        onRefresh: self => update(self.progress),
+        onRefresh: self => {
+          holder.dataset.scrollStart = String(self.start);
+          holder.dataset.scrollEnd = String(self.end);
+          update(self.progress);
+        },
       });
+      holder.dataset.scrollStart = String(trigger.start);
+      holder.dataset.scrollEnd = String(trigger.end);
       const start = async () => {
         if (started || disposed) return;
         started = true;

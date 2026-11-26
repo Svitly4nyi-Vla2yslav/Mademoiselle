@@ -23,17 +23,32 @@ try {
     for (const id of ['start','fruehstueck','ambiente']) {
       const canvas = page.locator('#'+id+' canvas');
       const seek = async progress => {
-        await page.evaluate(({id,progress})=>{
-          const section=document.getElementById(id);
-          const stage=section.querySelector('.sequence-stage');
-          const top=section.getBoundingClientRect().top+window.scrollY;
-          window.scrollTo(0, Math.round(top+(section.offsetHeight-stage.offsetHeight)*progress));
+        await page.waitForFunction(id=>{
+          const stage=document.querySelector('#'+id+' .sequence-stage');
+          return Number(stage.dataset.scrollEnd)>Number(stage.dataset.scrollStart);
+        },id);
+        const destination=await page.evaluate(({id,progress})=>{
+          const stage=document.querySelector('#'+id+' .sequence-stage');
+          const start=Number(stage.dataset.scrollStart), end=Number(stage.dataset.scrollEnd);
+          const top=Math.round(start+(end-start)*progress);
+          window.scrollTo({top,behavior:'instant'});
+          return top;
         },{id,progress});
-        await page.waitForFunction(({id,progress,variant})=>{
-          const c=document.querySelector('#'+id+' canvas');
+        // Wait for the physical scroll position, GSAP progress and exact decoded
+        // frame together; a nearby cached frame alone is not a settled scene.
+        await page.waitForFunction(({id,destination,variant})=>{
+          const stage=document.querySelector('#'+id+' .sequence-stage');
+          const c=stage.querySelector('canvas');
+          const start=Number(stage.dataset.scrollStart), end=Number(stage.dataset.scrollEnd);
+          const span=end-start;
+          const actual=Math.min(1,Math.max(0,(window.scrollY-start)/span));
+          const applied=Number(stage.style.getPropertyValue('--scene-progress'));
           const count=Number(c.dataset.frameCount);
-          return c.classList.contains('is-ready') && c.dataset.variant===variant && count>1 && Math.abs(Number(c.dataset.frame)-Math.round(progress*(count-1)))<=1;
-        },{id,progress,variant},{timeout:20000});
+          return span>0 && Math.abs(window.scrollY-destination)<=1 &&
+            Math.abs(applied-actual)*span<=.5 &&
+            c.classList.contains('is-ready') && c.dataset.variant===variant &&
+            count>1 && Number(c.dataset.frame)===Math.round(applied*(count-1));
+        },{id,destination,variant},{timeout:20000});
         return canvas.evaluate(c=>({frame:Number(c.dataset.frame),pixels:c.toDataURL()}));
       };
       const start=await seek(.2);
@@ -53,7 +68,8 @@ try {
           const portal = el.querySelector('.scene-portal');
           const rim = el.querySelector('.scene-liquid-rim');
           const style = getComputedStyle(portal);
-          return { progress:Number(el.dataset.liquidProgress), mask:style.clipPath, visibility:style.visibility, rim:getComputedStyle(rim).clipPath, rimOpacity:Number(getComputedStyle(rim).opacity) };
+          const rect=el.getBoundingClientRect();
+          return { progress:Number(el.dataset.liquidProgress), sceneProgress:Number(el.style.getPropertyValue('--scene-progress')), scrollY:window.scrollY, span:Number(el.dataset.scrollEnd)-Number(el.dataset.scrollStart), width:rect.width, height:rect.height, mask:style.clipPath, visibility:style.visibility, rim:getComputedStyle(rim).clipPath, rimOpacity:Number(getComputedStyle(rim).opacity) };
         });
         assert.equal((await state()).visibility,'hidden','liquid closed at early scroll');
         await seek(.77);
@@ -92,7 +108,28 @@ try {
         },null,{timeout:20000});
         await page.screenshot({path:'test-results/'+variant+'-liquid-handoff.png'});
         await seek(.77);
-        assert.equal((await state()).mask,first.mask,'exact same shape at same scroll position in reverse');
+        const reverse = await state();
+        assert(Math.abs(reverse.scrollY-first.scrollY)<=1,'reverse returns to the same physical scroll position');
+        assert(Math.abs(reverse.sceneProgress-first.sceneProgress)*first.span<=1.5,'reverse GSAP position differs by at most 1.5 scroll pixels');
+        assert(Math.abs(reverse.width-first.width)<.5 && Math.abs(reverse.height-first.height)<.5,'same viewport dimensions');
+        assert.equal(reverse.visibility,'visible','liquid reappears after reversing the handoff');
+        // On mobile Chromium the scroll offset can be rounded to a fractional
+        // CSS pixel. Require pixel-equivalent outlines, not string equality
+        // for distinct floating point inputs. At identical inputs require exact equality.
+        const polygonCoordinates = mask => [...mask.matchAll(/(-?\d+(?:\.\d+)?)%/g)].map(m=>Number(m[1]));
+        const compare = (a,b,label) => {
+          if (reverse.progress===first.progress && reverse.width===first.width && reverse.height===first.height) {
+            assert.equal(a,b,label+' identical inputs');
+          }
+          const x=polygonCoordinates(a), y=polygonCoordinates(b);
+          assert.equal(x.length,160,label+' 80 vertices');
+          assert.equal(y.length,x.length,label+' vertex count');
+          const maxDelta=Math.max(...x.map((v,i)=>Math.abs(v-y[i])*(i%2===0?first.width:first.height)/100));
+          assert(maxDelta<=2,label+' coordinate drift '+maxDelta.toFixed(3)+'px exceeds 2px');
+          console.log(variant+' '+label+': '+maxDelta.toFixed(3)+'px drift');
+        };
+        compare(first.mask,reverse.mask,'liquid reverse outline');
+        compare(first.rim,reverse.rim,'liquid reverse rim');
         await seek(.2);
         assert.equal((await state()).visibility,'hidden','liquid closes on reverse');
       }
