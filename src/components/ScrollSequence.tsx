@@ -37,7 +37,7 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
       delete surface.dataset.frame;
       delete surface.dataset.frameCount;
       delete surface.dataset.variant;
-      for (const key of ['--scene-progress', '--copy-opacity', '--copy-shift', '--camera-scale', '--transition-out', '--transition-in', '--portal-radius', '--portal-ring', '--shade-opacity', '--liquid-mask', '--liquid-rim-mask', '--liquid-rim-opacity', '--liquid-visibility']) holder.style.removeProperty(key);
+      for (const key of ['--scene-progress', '--copy-opacity', '--copy-shift', '--camera-scale', '--transition-out', '--transition-in', '--shade-opacity', '--liquid-mask', '--liquid-rim-mask', '--liquid-rim-opacity', '--liquid-visibility']) holder.style.removeProperty(key);
       delete holder.dataset.liquidProgress;
       if (reduced.matches) return;
       const variant = responsive.matches ? 'mobile' : 'desktop';

@@ -71,6 +71,26 @@ try {
         const late = await state();
         assert(late.progress>second.progress && late.mask!==second.mask,'liquid expands across viewport');
         await page.screenshot({path:'test-results/'+variant+'-liquid-late.png'});
+        // Step across the overlapping sticky stages and verify that no child
+        // with explicit visibility can keep covering the breakfast chapter.
+        await page.evaluate(()=>{
+          const source=document.getElementById('start');
+          const stage=source.querySelector('.sequence-stage');
+          window.scrollTo(0,source.getBoundingClientRect().top+window.scrollY+source.offsetHeight-stage.offsetHeight+3);
+        });
+        await page.waitForFunction(()=>{
+          const source=document.getElementById('start');
+          const next=document.querySelector('#fruehstueck .sequence-stage');
+          return source.classList.contains('is-past') &&
+            getComputedStyle(source.querySelector('.scene-portal')).visibility==='hidden' &&
+            getComputedStyle(source.querySelector('.scene-liquid-rim')).visibility==='hidden' &&
+            Math.abs(next.getBoundingClientRect().top)<=5;
+        });
+        await page.waitForFunction(()=>{
+          const canvas=document.querySelector('#fruehstueck canvas');
+          return canvas.classList.contains('is-ready') && Number(canvas.dataset.frame)<=1;
+        },null,{timeout:20000});
+        await page.screenshot({path:'test-results/'+variant+'-liquid-handoff.png'});
         await seek(.77);
         assert.equal((await state()).mask,first.mask,'exact same shape at same scroll position in reverse');
         await seek(.2);

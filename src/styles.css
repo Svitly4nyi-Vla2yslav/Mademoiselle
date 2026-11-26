@@ -167,7 +167,9 @@ h1,h2 { letter-spacing: -.055em; }
 .sequence-shade { opacity: var(--shade-opacity); }
 .sequence--portal-source { z-index: 2; background: transparent; pointer-events: none; }
 .sequence--portal-source .sequence-copy { pointer-events: auto; }
-.sequence--portal-source.is-past .sequence-stage { visibility: hidden; }
+.sequence--portal-source.is-past .sequence-stage,
+.sequence--portal-source.is-past .scene-portal,
+.sequence--portal-source.is-past .scene-liquid-rim { visibility: hidden; }
 .sequence--portal-source + .sequence--breakfast { margin-top: -100svh; z-index: 1; }
 .sequence-stage.is-copy-hidden .sequence-copy { pointer-events: none; }
 .sequence-stage.is-copy-hidden .sequence-copy:focus-within { pointer-events: auto; }
