@@ -48,9 +48,21 @@ try {
       const opacityAtEnd = await stage.evaluate(el=>Number(getComputedStyle(el.querySelector('.sequence-copy')).opacity));
       assert(opacityAtStart>.5 && opacityAtEnd<.05, id+' cinematic title exit');
       await seek(.2);
+      if (id === 'start') {
+        const radius = () => stage.evaluate(el=>parseFloat(getComputedStyle(el).getPropertyValue('--portal-radius')));
+        assert.equal(await radius(),0,'portal closed at early scroll');
+        await seek(.85);
+        assert((await radius())>0 && (await radius())<150,'portal opens during scroll');
+        await page.waitForFunction(()=>document.querySelector('.scene-portal img').naturalWidth>0);
+        await page.screenshot({path:'test-results/'+variant+'-portal-open.png'});
+        await seek(.2);
+        assert.equal(await radius(),0,'portal closes on reverse');
+      }
       await page.screenshot({path:'test-results/'+variant+'-'+id+'.png'});
       console.log(variant+' '+id+': '+start.frame+' -> '+end.frame+' -> '+back.frame);
     }
+    assert.equal(await page.locator('[data-motion-version="3.0"]').count(),1);
+    assert.equal(await page.locator('#start + #fruehstueck').count(),1);
     assert.equal(await page.locator('.gallery-card').count(),3);
     assert.equal(await page.locator('.menu-preview article').count(),3);
     await page.locator('nav a[href="#besuch"]').click();
@@ -61,6 +73,8 @@ try {
     await page.locator('#start').scrollIntoViewIfNeeded();
     await page.waitForFunction(()=>getComputedStyle(document.querySelector('#start canvas')).display==='none' && document.querySelector('#start img').naturalWidth>0);
     assert.equal(await page.locator('#start .sequence-copy').evaluate(el=>getComputedStyle(el).opacity),'1');
+    assert.equal(await page.locator('.scene-portal').evaluate(el=>getComputedStyle(el).display),'none');
+    assert.equal(await page.locator('#fruehstueck').evaluate(el=>getComputedStyle(el).marginTop),'0px');
     await page.close();
   }
 } finally {

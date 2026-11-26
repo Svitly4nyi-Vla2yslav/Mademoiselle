@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ScrollSequence from './components/ScrollSequence';
 
 const media = import.meta.env.BASE_URL + 'media/';
@@ -55,17 +57,49 @@ function Gallery() {
 }
 
 export default function App() {
+  const main = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!main.current) return;
+    const mm = gsap.matchMedia();
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      const root = main.current;
+      if (!root) return;
+      const ctx = gsap.context(() => {
+        root.querySelectorAll<HTMLElement>('.editorial-index').forEach(el => {
+          gsap.fromTo(el, { yPercent: -14 }, { yPercent: 14, ease: 'none',
+            scrollTrigger: { trigger: el.parentElement, start: 'top bottom', end: 'bottom top', scrub: true } });
+        });
+        root.querySelectorAll<HTMLElement>('.gallery-image').forEach(el => {
+          gsap.fromTo(el, { '--image-drift': '-8%' }, { '--image-drift': '8%', ease: 'none',
+            scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: true } });
+        });
+        root.querySelectorAll<HTMLElement>('.editorial--welcome h2, .editorial--rose h2, .visit h2').forEach(el => {
+          gsap.fromTo(el, { y: 44 }, { y: -18, ease: 'none',
+            scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: true } });
+        });
+      }, root);
+      return () => ctx.revert();
+    });
+    ScrollTrigger.refresh();
+    return () => mm.revert();
+  }, []);
   return (
     <>
       <a className="skip" href="#content">Zum Inhalt</a>
       <Header />
-      <main id="content">
-        <ScrollSequence id="start" scene="coffee" priority scrollLength={240} align="left">
+      <main ref={main} id="content" data-motion-version="3.0">
+        <ScrollSequence id="start" scene="coffee" priority scrollLength={280} align="left" portalTo="breakfast">
           <p className="eyebrow"><span className="chapter-rule" /> Hildesheim · Café & Genuss</p>
           <h1>Ein kleiner<br/>Moment <i>Paris.</i></h1>
           <p className="intro">Zeit für die schönen Dinge des Tages.</p>
           <a className="button" href="#fruehstueck">Entdecken <span aria-hidden="true">↘</span></a>
           <span className="scroll-hint" aria-hidden="true">SCROLLEN & ENTDECKEN <span>↓</span></span>
+        </ScrollSequence>
+        <ScrollSequence id="fruehstueck" scene="breakfast" scrollLength={210} align="right">
+          <p className="eyebrow"><span className="chapter-rule" /> 01 · Der schöne Morgen</p>
+          <h2>Frühstück<br/><i>mit Liebe.</i></h2>
+          <p className="intro">Ein guter Tag beginnt mit Genuss.</p>
+          <a className="button" href="#genuss">Genuss entdecken <span aria-hidden="true">↘</span></a>
         </ScrollSequence>
         <section className="editorial editorial--welcome" aria-labelledby="welcome">
           <span className="editorial-index" aria-hidden="true">M.</span>
@@ -75,13 +109,8 @@ export default function App() {
           <p>Ein duftender Kaffee, ein gemütlicher Morgen und ein Moment ganz für sich. Eine Einladung, den Alltag für einen Augenblick zu vergessen.</p>
           <a className="text-link" href="#fruehstueck">Le petit déjeuner <span aria-hidden="true">↓</span></a>
         </section>
-        <ScrollSequence id="fruehstueck" scene="breakfast" scrollLength={210} align="right">
-          <p className="eyebrow"><span className="chapter-rule" /> 01 · Der schöne Morgen</p>
-          <h2>Frühstück<br/><i>mit Liebe.</i></h2>
-          <p className="intro">Ein guter Tag beginnt mit Genuss.</p>
-          <a className="button" href="#genuss">Genuss entdecken <span aria-hidden="true">↘</span></a>
-        </ScrollSequence>
         <section id="genuss" className="editorial editorial--rose" aria-labelledby="sweet">
+          <span className="editorial-index" aria-hidden="true">G.</span>
           <p className="eyebrow">02 · Kleine Auszeiten</p>
           <div className="ornament" aria-hidden="true">✧</div>
           <h2 id="sweet">Ein bisschen<br/><i>Lebensfreude.</i></h2>
@@ -109,7 +138,7 @@ export default function App() {
           <a className="button button--dark" href="#start">Zum Anfang <span aria-hidden="true">↑</span></a>
         </section>
       </main>
-      <footer><span>MADEMOISELLE <em>Gourmet Café</em></span><small>Designkonzept · KI-Visualisierungen · Keine offizielle Café-Website</small><small>Konzept: VS Web Studio</small></footer>
+      <footer><span>MADEMOISELLE <em>Gourmet Café</em></span><small>Designkonzept · KI-Visualisierungen · Keine offizielle Café-Website</small><small>Konzept: VS Web Studio · Motion 3.0</small></footer>
     </>
   );
 }
