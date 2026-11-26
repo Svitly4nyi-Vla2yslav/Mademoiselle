@@ -67,3 +67,15 @@ footer small { font: .75rem/1.5 Arial,sans-serif; color: #ead0cf; }
   .sequence-stage { position: relative; }
   .sequence-canvas, .scroll-hint { display: none; }
 }
+
+/* The progress line follows actual scroll position, not a video timer. */
+.sequence-progress { position: absolute; z-index: 2; bottom: 1.5rem; left: clamp(1.5rem, 6vw, 6rem); right: clamp(1.5rem, 6vw, 6rem); height: 2px; background: #f7f0e655; pointer-events: none; }
+.sequence-progress span { display: block; width: 100%; height: 100%; background: #f2d9b6; transform: scaleX(var(--scene-progress, 0)); transform-origin: left; }
+@media (max-width: 767px) {
+  #start .sequence-stage { align-items: start; }
+  #start .sequence-copy { padding-top: clamp(7.5rem, 23svh, 12rem); padding-bottom: 3rem; }
+  #start .sequence-shade { background: linear-gradient(180deg,#071e20b8 0%,#071e2099 30%,#071e2022 65%,transparent 85%); }
+  #start .scroll-hint { position: static; margin-top: 1.2rem; }
+  .sequence-progress { bottom: 1rem; }
+}
+@media (prefers-reduced-motion: reduce) { .sequence-progress { display: none; } }

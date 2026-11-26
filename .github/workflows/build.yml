@@ -12,4 +12,13 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-audit --no-fund
+      - run: npm run media:check
       - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:scroll
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scroll-preview-screenshots
+          path: test-results/
+          if-no-files-found: ignore

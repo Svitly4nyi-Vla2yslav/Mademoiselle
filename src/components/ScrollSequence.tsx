@@ -27,8 +27,13 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
     const setup = () => {
       stop();
       surface.classList.remove('is-ready');
+      delete surface.dataset.frame;
+      delete surface.dataset.frameCount;
+      delete surface.dataset.variant;
+      holder.style.removeProperty('--scene-progress');
       if (reduced.matches) return;
       const variant = responsive.matches ? 'mobile' : 'desktop';
+      surface.dataset.variant = variant;
       const base = mediaRoot + scene + '/' + variant + '/';
       const abort = new AbortController();
       const cache = new Map<number, HTMLImageElement>();
@@ -60,6 +65,7 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
         if (image) {
           cache.delete(selected); cache.set(selected, image);
           lastImage = image;
+          surface.dataset.frame = String(selected);
         }
         if (lastImage) {
           drawCover(ctx, lastImage, surface.width, surface.height);
@@ -105,6 +111,7 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
       };
       const update = (p: number) => {
         progress = p;
+        holder.style.setProperty('--scene-progress', String(p));
         if (!manifest) return;
         target = clampFrame(p, manifest.frameCount);
         scheduleRender(); pump();
@@ -124,6 +131,7 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
           if (!validManifest(data)) throw new Error('Invalid manifest');
           if (disposed) return;
           manifest = data;
+          surface.dataset.frameCount = String(data.frameCount);
           update(progress);
         } catch (error) {
           if (!disposed) console.warn('[ScrollSequence] Poster fallback:', scene, error);
@@ -158,11 +166,12 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
       <div ref={stage} className="sequence-stage">
         <picture className="sequence-poster" aria-hidden="true">
           <source media="(max-width: 767px)" srcSet={mediaRoot + scene + '/mobile/poster.webp'} />
-          <img src={mediaRoot + scene + '/desktop/poster.webp'} alt="" loading={priority ? 'eager' : 'lazy'} fetchPriority={priority ? 'high' : 'low'} onError={event => { event.currentTarget.style.visibility = 'hidden'; }} />
+          <img src={mediaRoot + scene + '/desktop/poster.webp'} alt="" loading={priority ? 'eager' : 'lazy'} fetchPriority={priority ? 'high' : 'low'} onLoad={event => { event.currentTarget.style.visibility = ''; }} onError={event => { event.currentTarget.style.visibility = 'hidden'; }} />
         </picture>
         <canvas ref={canvas} className="sequence-canvas" aria-hidden="true" />
         <div className="sequence-shade" aria-hidden="true" />
         <div className="sequence-copy">{children}</div>
+        <div className="sequence-progress" aria-hidden="true"><span /></div>
       </div>
     </section>
   );

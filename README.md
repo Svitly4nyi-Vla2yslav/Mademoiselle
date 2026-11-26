@@ -20,3 +20,7 @@ Prototype only. Verify media rights and whether generated scenes match the actua
 ## Checks
 
 Run `npm run build`. Test slow network, reverse scroll, viewport resize, orientation change, mobile Safari and Chrome, keyboard navigation, reduced motion and missing media before release.
+
+## Media verification and browser smoke test
+
+The six original videos and prepared sequences live at the repository root in `media-source/` and `public/media/` respectively. Do not place them inside another ZIP wrapper folder. Run `npm run media:check` to verify every manifest, numbered frame, poster and source video. Run `npm run build`, `npx playwright install chromium`, then `npm run test:scroll` for a Chromium smoke test with desktop and mobile viewport emulation. It checks actual canvas changes on forward and reverse scrolling, responsive variants, horizontal overflow and reduced-motion fallback. Screenshots are written to `test-results/` and uploaded as a GitHub Actions artifact. Real Android/iOS device checks are still required.
