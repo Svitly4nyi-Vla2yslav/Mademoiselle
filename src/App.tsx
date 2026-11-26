@@ -103,7 +103,7 @@ export default function App() {
     <>
       <a className="skip" href="#content">Zum Inhalt</a>
       <Header />
-      <main ref={main} id="content" data-motion-version="4.0">
+      <main ref={main} id="content" data-motion-version="4.1">
         <ScrollSequence id="start" scene="coffee" priority scrollLength={280} align="left" portalTo="breakfast">
           <p className="eyebrow"><span className="chapter-rule" /> Hildesheim · Café & Genuss</p>
           <h1>Ein kleiner<br/>Moment <i>Paris.</i></h1>
@@ -150,7 +150,7 @@ export default function App() {
           <a className="button button--dark magnetic" onPointerMove={event=>pointerMotion(event,'magnet')} onPointerLeave={event=>resetPointer(event.currentTarget)} href="#start">Zum Anfang <span aria-hidden="true">↑</span></a>
         </section>
       </main>
-      <footer><span>MADEMOISELLE <em>Gourmet Café</em></span><small>Designkonzept · KI-Visualisierungen · Keine offizielle Café-Website</small><small>Konzept: VS Web Studio · Motion 4.0 · Cinematic Experience</small></footer>
+      <footer><span>MADEMOISELLE <em>Gourmet Café</em></span><small>Designkonzept · KI-Visualisierungen · Keine offizielle Café-Website</small><small>Konzept: VS Web Studio · Motion 4.1 · Cinematic Experience</small></footer>
     </>
   );
 }

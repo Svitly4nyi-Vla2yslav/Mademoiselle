@@ -17,7 +17,7 @@ try {
   await mkdir(output,{recursive:true});
   browser = await chromium.launch();
   for (const [variant,viewport] of [['desktop',{width:1440,height:900}],['mobile',{width:390,height:844}]]) {
-    const page = await browser.newPage({viewport,deviceScaleFactor:1,isMobile:variant==='mobile',hasTouch:variant==='mobile'});
+    const page = await browser.newPage({viewport,deviceScaleFactor:1,isMobile:variant==='mobile',hasTouch:variant==='mobile',reducedMotion:'reduce'});
     const errors=[];
     page.on('pageerror',error=>errors.push(error.message));
     if(live) {
@@ -25,17 +25,21 @@ try {
       let current=false;
       for(let attempt=0;attempt<24;attempt++){
         try {
-          const response=await page.goto(url+'?release=4.0&attempt='+attempt,{waitUntil:'domcontentloaded',timeout:15000});
-          if(response?.ok() && await page.locator('[data-motion-version="4.0"]').count()){current=true;break;}
-          await page.locator('[data-motion-version="4.0"]').waitFor({timeout:3000});current=true;break;
+          const response=await page.goto(url+'?release=4.1&attempt='+attempt,{waitUntil:'domcontentloaded',timeout:15000});
+          if(response?.ok() && await page.locator('[data-motion-version="4.1"]').count()){current=true;break;}
+          await page.locator('[data-motion-version="4.1"]').waitFor({timeout:3000});current=true;break;
         }catch{}
         await new Promise(resolve=>setTimeout(resolve,3000));
       }
-      assert(current,'live site has not published Motion 4.0 or is inaccessible');
+      assert(current,'live site has not published Motion 4.1 or is inaccessible');
       errors.length=0;
     } else await page.goto(url);
-    await page.waitForSelector('[data-motion-version="4.0"]');
-    assert.equal(await page.locator('html').getAttribute('data-motion'),'on');
+    await page.waitForSelector('[data-motion-version="4.1"]');
+    assert.equal(await page.locator('html').getAttribute('data-motion'),'on','motion starts enabled even with system reduced-motion');
+    assert.equal(await page.locator('.motion-switch').getAttribute('aria-pressed'),'true');
+    await page.emulateMedia({reducedMotion:'no-preference'});
+    await page.emulateMedia({reducedMotion:'reduce'});
+    assert.equal(await page.locator('html').getAttribute('data-motion'),'on','system preference does not override explicit site behavior');
     for(const scene of ['coffee','breakfast','interior']){
       const manifest=await page.request.get(new URL('media/'+scene+'/'+variant+'/manifest.json',url).href);
       assert(manifest.ok(),'manifest HTTP '+scene+'/'+variant);
@@ -167,7 +171,7 @@ try {
       await page.screenshot({path:output+'/'+variant+'-'+id+'.png'});
       console.log(variant+' '+id+': '+start.frame+' -> '+end.frame+' -> '+back.frame);
     }
-    assert.equal(await page.locator('[data-motion-version="4.0"]').count(),1);
+    assert.equal(await page.locator('[data-motion-version="4.1"]').count(),1);
     assert.equal(await page.locator('#start + #fruehstueck').count(),1);
     assert.equal(await page.locator('.gallery-card').count(),3);
     assert.equal(await page.locator('.menu-preview button').count(),3);
@@ -248,15 +252,25 @@ try {
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'horizontal overflow');
     await page.locator('.motion-switch').click();
     await page.waitForFunction(()=>document.documentElement.dataset.motion==='off' && document.querySelector('#start .sequence-stage').dataset.mediaState==='paused');
-    await page.locator('.motion-switch').click();
-    await page.waitForFunction(()=>document.documentElement.dataset.motion==='on');
-    await page.emulateMedia({reducedMotion:'reduce'});
+    assert.equal(await page.locator('.motion-switch').getAttribute('aria-pressed'),'false');
+    await page.emulateMedia({reducedMotion:'no-preference'});
+    assert.equal(await page.locator('html').getAttribute('data-motion'),'off','system preference does not restart manually disabled motion');
     await page.locator('#start').scrollIntoViewIfNeeded();
     await page.waitForFunction(()=>getComputedStyle(document.querySelector('#start canvas')).display==='none' && document.querySelector('#start img').naturalWidth>0);
     assert.equal(await page.locator('#start .sequence-copy').evaluate(el=>getComputedStyle(el).opacity),'1');
     assert.equal(await page.locator('.scene-portal').evaluate(el=>getComputedStyle(el).display),'none');
     assert.equal(await page.locator('.scene-liquid-rim').evaluate(el=>getComputedStyle(el).display),'none');
     assert.equal(await page.locator('#fruehstueck').evaluate(el=>getComputedStyle(el).marginTop),'0px');
+    await page.locator('.motion-switch').click();
+    await page.waitForFunction(()=>document.documentElement.dataset.motion==='on' && document.querySelector('#start canvas').classList.contains('is-ready'));
+    assert.equal(await page.locator('.motion-switch').getAttribute('aria-pressed'),'true');
+    await page.locator('.motion-switch').click();
+    await page.waitForFunction(()=>document.documentElement.dataset.motion==='off');
+    await page.emulateMedia({reducedMotion:'reduce'});
+    await page.goto(url+'?release=4.1&default=on');
+    await page.waitForFunction(()=>document.documentElement.dataset.motion==='on' && document.querySelector('#start canvas')?.classList.contains('is-ready'));
+    assert.equal(await page.locator('.motion-switch').getAttribute('aria-pressed'),'true');
+    console.log(variant+' default-on, manual off/on, system independence and reload: passed');
     await page.close();
   }
 } finally {

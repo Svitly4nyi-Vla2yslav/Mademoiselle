@@ -10,7 +10,7 @@ const links = [
 export function MotionSwitch() {
   const [enabled, setEnabled] = useState(motionEnabled);
   useEffect(() => subscribeMotion(() => setEnabled(motionEnabled())), []);
-  return <button type="button" className="motion-switch" aria-pressed={enabled} onClick={() => setMotionEnabled(!enabled)} title="Scroll-Animationen ein- oder ausschalten"><span className="motion-dot" aria-hidden="true"/>{enabled ? 'Motion an' : 'Motion aus'}</button>;
+  return <button type="button" className="motion-switch" aria-pressed={enabled} onClick={() => setMotionEnabled(!enabled)} aria-label="Scroll-Animationen" title={enabled ? 'Animationen ausschalten' : 'Animationen einschalten'}><span className="motion-dot" aria-hidden="true"/>{enabled ? 'Motion an' : 'Motion aus'}</button>;
 }
 export function FullNavigation() {
   const dialog = useRef<HTMLDialogElement>(null);
