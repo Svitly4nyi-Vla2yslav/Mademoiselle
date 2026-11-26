@@ -8,6 +8,10 @@ const mediaRoot = import.meta.env.BASE_URL + 'media/';
 type Scene = 'coffee' | 'breakfast' | 'interior';
 type Props = { id: string; scene: Scene; children: ReactNode; priority?: boolean; scrollLength?: number; align?: 'left' | 'right' };
 const MAX_CACHE = 18;
+const smooth = (a: number, b: number, p: number) => {
+  const t = Math.min(1, Math.max(0, (p - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
 const MAX_IN_FLIGHT = 3;
 
 export default function ScrollSequence({ id, scene, children, priority = false, scrollLength = 180, align = 'left' }: Props) {
@@ -30,7 +34,7 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
       delete surface.dataset.frame;
       delete surface.dataset.frameCount;
       delete surface.dataset.variant;
-      holder.style.removeProperty('--scene-progress');
+      for (const key of ['--scene-progress', '--copy-opacity', '--copy-shift', '--camera-scale', '--transition-out', '--transition-in']) holder.style.removeProperty(key);
       if (reduced.matches) return;
       const variant = responsive.matches ? 'mobile' : 'desktop';
       surface.dataset.variant = variant;
@@ -112,6 +116,13 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
       const update = (p: number) => {
         progress = p;
         holder.style.setProperty('--scene-progress', String(p));
+        const exit = smooth(.38, .78, p);
+        const entry = priority ? 1 : smooth(0, .16, p);
+        holder.style.setProperty('--copy-opacity', String(entry * (1 - exit)));
+        holder.style.setProperty('--copy-shift', String((1 - entry) * 24 - exit * 42) + 'px');
+        holder.style.setProperty('--camera-scale', String(1 + .055 * smooth(.15, .92, p)));
+        holder.style.setProperty('--transition-out', String(smooth(.87, 1, p)));
+        holder.style.setProperty('--transition-in', String(priority ? 0 : 1 - smooth(0, .13, p)));
         if (!manifest) return;
         target = clampFrame(p, manifest.frameCount);
         scheduleRender(); pump();
@@ -162,7 +173,7 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
     return () => { stop(); responsive.removeEventListener('change', setup); reduced.removeEventListener('change', setup); };
   }, [scene, priority]);
   return (
-    <section ref={section} id={id} className={'sequence sequence--' + align} style={{ minHeight: scrollLength + 'svh' }}>
+    <section ref={section} id={id} className={'sequence sequence--' + align + ' sequence--' + scene} style={{ minHeight: scrollLength + 'svh' }}>
       <div ref={stage} className="sequence-stage">
         <picture className="sequence-poster" aria-hidden="true">
           <source media="(max-width: 767px)" srcSet={mediaRoot + scene + '/mobile/poster.webp'} />
@@ -170,6 +181,8 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
         </picture>
         <canvas ref={canvas} className="sequence-canvas" aria-hidden="true" />
         <div className="sequence-shade" aria-hidden="true" />
+        <div className="scene-transition scene-transition--in" aria-hidden="true" />
+        <div className="scene-transition scene-transition--out" aria-hidden="true" />
         <div className="sequence-copy">{children}</div>
         <div className="sequence-progress" aria-hidden="true"><span /></div>
       </div>

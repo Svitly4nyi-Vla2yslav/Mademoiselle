@@ -42,14 +42,25 @@ try {
       assert(end.frame>start.frame, id+' forward');
       assert(back.frame<end.frame, id+' reverse');
       assert.notEqual(start.pixels,end.pixels,id+' rendered image did not change');
+      const stage = page.locator('#'+id+' .sequence-stage');
+      const opacityAtStart = await stage.evaluate(el=>Number(getComputedStyle(el.querySelector('.sequence-copy')).opacity));
+      await seek(.8);
+      const opacityAtEnd = await stage.evaluate(el=>Number(getComputedStyle(el.querySelector('.sequence-copy')).opacity));
+      assert(opacityAtStart>.5 && opacityAtEnd<.05, id+' cinematic title exit');
+      await seek(.2);
       await page.screenshot({path:'test-results/'+variant+'-'+id+'.png'});
       console.log(variant+' '+id+': '+start.frame+' -> '+end.frame+' -> '+back.frame);
     }
+    assert.equal(await page.locator('.gallery-card').count(),3);
+    assert.equal(await page.locator('.menu-preview article').count(),3);
+    await page.locator('nav a[href="#besuch"]').click();
+    await page.waitForFunction(()=>location.hash==='#besuch');
     assert.deepEqual(errors,[]);
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'horizontal overflow');
     await page.emulateMedia({reducedMotion:'reduce'});
     await page.locator('#start').scrollIntoViewIfNeeded();
     await page.waitForFunction(()=>getComputedStyle(document.querySelector('#start canvas')).display==='none' && document.querySelector('#start img').naturalWidth>0);
+    assert.equal(await page.locator('#start .sequence-copy').evaluate(el=>getComputedStyle(el).opacity),'1');
     await page.close();
   }
 } finally {

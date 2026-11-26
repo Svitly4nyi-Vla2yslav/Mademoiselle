@@ -24,3 +24,9 @@ Run `npm run build`. Test slow network, reverse scroll, viewport resize, orienta
 ## Media verification and browser smoke test
 
 The six original videos and prepared sequences live at the repository root in `media-source/` and `public/media/` respectively. Do not place them inside another ZIP wrapper folder. Run `npm run media:check` to verify every manifest, numbered frame, poster and source video. Run `npm run build`, `npx playwright install chromium`, then `npm run test:scroll` for a Chromium smoke test with desktop and mobile viewport emulation. It checks actual canvas changes on forward and reverse scrolling, responsive variants, horizontal overflow and reduced-motion fallback. Screenshots are written to `test-results/` and uploaded as a GitHub Actions artifact. Real Android/iOS device checks are still required.
+
+## Cinematic Motion 2.0
+
+Three scroll-driven chapters reuse the existing six responsive media sequences. The Canvas engine still maps native scroll directly to manifest frames; a second layer of normalized progress drives title fade/parallax, camera scale and palette-matched scene fades. No added runtime dependencies or external media/font requests. Reduced motion keeps all copy and posters visible. Fixed navigation and the editorial gallery provide direct access to each chapter. The menu categories are illustrative, not verified offerings. The gallery uses existing concept posters rather than additional unverified dessert images. No public deployment or indexing is enabled.
+
+CI additionally checks title fade, gallery/menu presence, navigation and reduced-motion copy visibility. Visual review on actual devices remains necessary.
