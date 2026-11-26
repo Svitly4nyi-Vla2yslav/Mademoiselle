@@ -232,8 +232,14 @@ try {
     await page.waitForTimeout(7000);
     assert.equal(await page.locator('.food-detail').getAttribute('data-active'),pausedAt,'autoplay paused');
     if(variant==='mobile'){
-      await stageFood.dispatchEvent('touchstart',{changedTouches:[{clientX:260,clientY:300}]});
-      await stageFood.dispatchEvent('touchend',{changedTouches:[{clientX:100,clientY:310}]});
+      await stageFood.evaluate(el=>{
+        const fire=(type,x,y)=>{
+          const touch=new Touch({identifier:1,target:el,clientX:x,clientY:y});
+          el.dispatchEvent(new TouchEvent(type,{bubbles:true,cancelable:true,changedTouches:[touch],touches:type==='touchend'?[]:[touch],targetTouches:type==='touchend'?[]:[touch]}));
+        };
+        fire('touchstart',260,300);fire('touchend',100,310);
+      });
+      await page.waitForFunction(id=>document.querySelector('.food-detail').dataset.active!==id,pausedAt);
       assert.notEqual(await page.locator('.food-detail').getAttribute('data-active'),pausedAt,'mobile swipe');
     }
     console.log(variant+' menu category interactions: passed');
