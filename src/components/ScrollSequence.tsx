@@ -3,6 +3,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { frameUrl, clampFrame, drawCover, type Manifest, validManifest } from '../lib/sequence';
 import { liquidMask } from '../lib/liquidMask';
+import { motionEnabled, subscribeMotion } from '../lib/motion';
 
 gsap.registerPlugin(ScrollTrigger);
 const mediaRoot = import.meta.env.BASE_URL + 'media/';
@@ -19,6 +20,7 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
   const section = useRef<HTMLElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const stage = useRef<HTMLDivElement>(null);
+  const indicator = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     const el = section.current;
     const surface = canvas.current;
@@ -27,7 +29,10 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
     const ctx = surface.getContext('2d', { alpha: false });
     if (!ctx) return;
     const responsive = window.matchMedia('(max-width: 767px)');
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const showStatus = (state: string, label: string) => {
+      holder.dataset.mediaState = state;
+      if (indicator.current) indicator.current.textContent = label;
+    };
     let stop = () => {};
     const setup = () => {
       stop();
@@ -41,7 +46,8 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
       delete holder.dataset.liquidProgress;
       delete holder.dataset.scrollStart;
       delete holder.dataset.scrollEnd;
-      if (reduced.matches) return;
+      if (!motionEnabled()) { showStatus('paused','Motion aus · Standbild'); return; }
+      showStatus('loading','Film wird geladen …');
       const variant = responsive.matches ? 'mobile' : 'desktop';
       surface.dataset.variant = variant;
       const base = mediaRoot + scene + '/' + variant + '/';
@@ -83,6 +89,7 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
         if (lastImage) {
           drawCover(ctx, lastImage, surface.width, surface.height);
           surface.classList.add('is-ready');
+          showStatus('ready','Film · '+(Number(surface.dataset.frame)+1)+' / '+(manifest?.frameCount ?? 0));
         }
       };
       const scheduleRender = () => { if (!raf && !disposed) raf = requestAnimationFrame(render); };
@@ -130,14 +137,14 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
             }
             scheduleRender(); pump();
           };
-          image.onerror = () => { pending.delete(index); failed.add(index); pump(); };
+          image.onerror = () => { pending.delete(index); failed.add(index); if (index===target) showStatus('error','Film nicht verfügbar · Standbild'); pump(); };
           image.src = frameUrl(base, manifest, index);
         }
       };
       const update = (p: number) => {
         progress = p;
         holder.style.setProperty('--scene-progress', String(p));
-        const exit = smooth(.30, .68, p);
+        const exit = smooth(.20, .58, p);
         const entry = priority ? 1 : smooth(0, .16, p);
         const portal = portalTo ? smooth(.66, 1, p) : 0;
         if (portalTo && portal !== portalProgress) {
@@ -148,8 +155,8 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
         holder.classList.toggle('is-copy-hidden', entry * (1 - exit) < .04);
         if (portalTo) el.classList.toggle('is-past', p >= .9999);
         holder.style.setProperty('--copy-opacity', String(entry * (1 - exit)));
-        holder.style.setProperty('--copy-shift', String((1 - entry) * 24 - exit * 42) + 'px');
-        holder.style.setProperty('--camera-scale', String(1 + (portalTo ? .13 : .055) * smooth(.15, .92, p)));
+        holder.style.setProperty('--copy-shift', String((1 - entry) * 30 - exit * 100) + 'px');
+        holder.style.setProperty('--camera-scale', String(1 + (portalTo ? .23 : .12) * smooth(.10, .92, p)));
         holder.style.setProperty('--transition-out', String(portalTo ? 0 : smooth(.87, 1, p)));
         holder.style.setProperty('--transition-in', String(priority || scene === 'breakfast' ? 0 : 1 - smooth(0, .13, p)));
         if (!manifest) return;
@@ -180,7 +187,7 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
           surface.dataset.frameCount = String(data.frameCount);
           update(progress);
         } catch (error) {
-          if (!disposed) console.warn('[ScrollSequence] Poster fallback:', scene, error);
+          if (!disposed) { showStatus('error','Film nicht verfügbar · Standbild'); console.warn('[ScrollSequence] Poster fallback:', scene, error); }
         }
       };
       if ('IntersectionObserver' in window) {
@@ -204,8 +211,8 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
     };
     setup();
     responsive.addEventListener('change', setup);
-    reduced.addEventListener('change', setup);
-    return () => { stop(); responsive.removeEventListener('change', setup); reduced.removeEventListener('change', setup); };
+    const unsubscribe = subscribeMotion(setup);
+    return () => { stop(); responsive.removeEventListener('change', setup); unsubscribe(); };
   }, [scene, priority, portalTo]);
   return (
     <section ref={section} id={id} className={'sequence sequence--' + align + ' sequence--' + scene + (portalTo ? ' sequence--portal-source' : '')} style={{ minHeight: scrollLength + 'svh' }}>
@@ -230,6 +237,7 @@ export default function ScrollSequence({ id, scene, children, priority = false, 
         )}
         <div className="sequence-copy">{children}</div>
         <div className="sequence-progress" aria-hidden="true"><span /></div>
+        <span ref={indicator} className="film-indicator" aria-hidden="true">Film wird geladen …</span>
       </div>
     </section>
   );
