@@ -5,7 +5,7 @@ import { FoodCarousel } from './FoodCarousel';
 const media = import.meta.env.BASE_URL + 'media/';
 const links = [
   ['Start','#start'], ['Frühstück','#fruehstueck'], ['Speisekarte','#genuss'],
-  ['Ambiente','#ambiente'], ['Galerie','#galerie'], ['Besuch','#besuch'],
+  ['Ambiente','#ambiente'], ['Galerie','#galerie'], ['Besuch','#besuch'], ['Reservierung','#reservierung'],
 ] as const;
 
 export function MotionSwitch() {

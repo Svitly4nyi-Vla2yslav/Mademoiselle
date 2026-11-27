@@ -52,3 +52,7 @@ Motion starts enabled on every fresh load. The visitor can pause all motion with
 ## Motion 4.2 — Maison Collection
 
 18 concept items in three categories, rotating responsive carousel, manual controls, autoplay pause, touch navigation, vector drink layers, logo and favicon, share metadata, footer legal drafts, consent settings. Prices are null until confirmed. `public/brand/assets.json` is ready:true. All 18 approved generated transparent WebP illustrations, logo variants, app icons and the 1200×630 JPEG social card are committed. The art is illustrative and not a verified product photograph. Native SVG illustrations remain available for layered interaction and fallback. No analytics, marketing tags or third-party embedded media. Legal pages are drafts; provider identity and hosting details require verification. Existing noindex and Motion 4.1 default-on are preserved. CI checks local and live release, actual asset HTTP responses, autoplay/pause, mobile swipe, coffee layer transforms, controls, legal routes and consent persistence.
+
+## Motion 4.4 — reservation prototype
+
+Versioned café cup favicon in SVG, PNG and ICO. Final responsive reservation section supports tables for 1–30 guests, events, and food order enquiries. Frontend only: native validation, no API or email, no persisted form data, full reset and explicitly simulated German success message. Privacy draft updated. Existing menu, brand media and motion default-on retained. Browser checks cover 1, 2 and 30 guests, food enquiry, reset and absence of POST/storage changes.

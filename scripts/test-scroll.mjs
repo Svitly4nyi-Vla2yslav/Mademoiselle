@@ -25,16 +25,16 @@ try {
       let current=false;
       for(let attempt=0;attempt<24;attempt++){
         try {
-          const response=await page.goto(url+'?release=4.3&attempt='+attempt,{waitUntil:'domcontentloaded',timeout:15000});
-          if(response?.ok() && await page.locator('[data-motion-version="4.3"]').count()){current=true;break;}
-          await page.locator('[data-motion-version="4.3"]').waitFor({timeout:3000});current=true;break;
+          const response=await page.goto(url+'?release=4.4&attempt='+attempt,{waitUntil:'domcontentloaded',timeout:15000});
+          if(response?.ok() && await page.locator('[data-motion-version="4.4"]').count()){current=true;break;}
+          await page.locator('[data-motion-version="4.4"]').waitFor({timeout:3000});current=true;break;
         }catch{}
         await new Promise(resolve=>setTimeout(resolve,3000));
       }
-      assert(current,'live site has not published Motion 4.3 or is inaccessible');
+      assert(current,'live site has not published Motion 4.4 or is inaccessible');
       errors.length=0;
     } else await page.goto(url);
-    await page.waitForSelector('[data-motion-version="4.3"]');
+    await page.waitForSelector('[data-motion-version="4.4"]');
     await page.locator('.cookie-banner').getByRole('button',{name:'Ablehnen',exact:true}).click();
     assert.equal(await page.locator('.cookie-banner').count(),0);
     const consent=await page.evaluate(()=>JSON.parse(localStorage.getItem('mademoiselle-consent-v1')));
@@ -190,7 +190,7 @@ try {
       await page.screenshot({path:output+'/'+variant+'-'+id+'.png'});
       console.log(variant+' '+id+': '+start.frame+' -> '+end.frame+' -> '+back.frame);
     }
-    assert.equal(await page.locator('[data-motion-version="4.3"]').count(),1);
+    assert.equal(await page.locator('[data-motion-version="4.4"]').count(),1);
     assert.equal(await page.locator('#start + #fruehstueck').count(),1);
     assert.equal(await page.locator('.gallery-card').count(),3);
     assert.equal(await page.locator('.menu-preview button').count(),3);
@@ -308,6 +308,43 @@ try {
     await page.locator('#full-menu a[href="#besuch"]').click();
     await page.waitForFunction(()=>location.hash==='#besuch' && !document.querySelector('#full-menu').open);
     console.log(variant+' fullscreen navigation: passed');
+    // Reservation form is a local-only simulation; all fields clear after each valid submission.
+    const booking=page.locator('.reservation-form');
+    await page.locator('#reservierung').scrollIntoViewIfNeeded();
+    assert.equal(await booking.locator('#reservation-guests option').count(),31);
+    assert(await page.locator('link[rel="icon"][href="/brand/cafe-icon-v2.svg"]').count());
+    for(const asset of ['brand/cafe-icon-v2.svg','brand/cafe-icon-v2-16.png','brand/cafe-icon-v2-32.png','favicon.ico']){
+      const response=await page.request.get(new URL(asset,url).href);
+      assert(response.ok()&&response.headers()['content-type']?.startsWith('image/'),'favicon HTTP/MIME '+asset);
+    }
+    const submissions=[];
+    const watch=request=>{if(!['GET','HEAD','OPTIONS'].includes(request.method()))submissions.push(request.url());};
+    page.on('request',watch);
+    const storageBefore=await page.evaluate(()=>JSON.stringify({...localStorage}));
+    for(const [mode,guest] of [['table','1'],['table','2'],['event','30'],['order',null]]){
+      await booking.locator('input[value="'+mode+'"]').check();
+      await booking.locator('#reservation-name').fill('Demo Gast');
+      await booking.locator('#reservation-email').fill('demo@example.com');
+      await booking.locator('#reservation-phone').fill('0123456789');
+      if(guest)await booking.locator('#reservation-guests').selectOption(guest);
+      if(mode==='event')await booking.locator('#reservation-occasion').selectOption('Geburtstag');
+      await booking.locator('#reservation-date').fill('2099-12-01');
+      await booking.locator('#reservation-time').fill('12:30');
+      await booking.locator('#reservation-message').fill('Testanfrage');
+      await booking.locator('#reservation-ack').check();
+      await page.screenshot({path:output+'/'+variant+'-reservation-'+mode+'-'+(guest||'order')+'.png'});
+      await booking.locator('button[type="submit"]').click();
+      await page.locator('.reservation-success').waitFor();
+      assert.match(await page.locator('.reservation-success').innerText(),/erfolgreich gesendet.*Demo/);
+      for(const field of ['name','email','phone','date','time','message','guests'])assert.equal(await booking.locator('#reservation-'+field).inputValue(),'','reset '+field);
+      assert.equal(await booking.locator('#reservation-ack').isChecked(),false);
+      assert.equal(await booking.locator('input[value="table"]').isChecked(),true);
+    }
+    await page.screenshot({path:output+'/'+variant+'-reservation-success.png'});
+    page.off('request',watch);
+    assert.deepEqual(submissions,[],'no form network submission');
+    assert.equal(await page.evaluate(()=>JSON.stringify({...localStorage})),storageBefore,'no reservation persistence');
+    console.log(variant+' favicon and demo reservations 1/2/30/order reset: passed');
     assert.deepEqual(errors,[]);
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'horizontal overflow');
     await page.locator('.motion-switch').click();
@@ -327,7 +364,7 @@ try {
     await page.locator('.motion-switch').click();
     await page.waitForFunction(()=>document.documentElement.dataset.motion==='off');
     await page.emulateMedia({reducedMotion:'reduce'});
-    await page.goto(url+'?release=4.3&default=on');
+    await page.goto(url+'?release=4.4&default=on');
     await page.waitForFunction(()=>document.documentElement.dataset.motion==='on' && document.querySelector('#start canvas')?.classList.contains('is-ready'));
     assert.equal(await page.locator('.motion-switch').getAttribute('aria-pressed'),'true');
     assert.equal(await page.locator('.cookie-banner').count(),0,'consent persists');

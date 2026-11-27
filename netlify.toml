@@ -19,3 +19,13 @@
   for = "/media/*/manifest.json"
   [headers.values]
     Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/favicon.ico"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/brand/cafe-icon-v2*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
