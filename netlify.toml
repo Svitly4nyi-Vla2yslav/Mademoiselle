@@ -26,6 +26,6 @@
     Cache-Control = "no-cache"
 
 [[headers]]
-  for = "/brand/cafe-icon-v2*"
+  for = "/brand/cafe-icon-v3*"
   [headers.values]
     Cache-Control = "public, max-age=604800"

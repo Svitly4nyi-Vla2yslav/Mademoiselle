@@ -25,16 +25,16 @@ try {
       let current=false;
       for(let attempt=0;attempt<24;attempt++){
         try {
-          const response=await page.goto(url+'?release=4.4&attempt='+attempt,{waitUntil:'domcontentloaded',timeout:15000});
-          if(response?.ok() && await page.locator('[data-motion-version="4.4"]').count()){current=true;break;}
-          await page.locator('[data-motion-version="4.4"]').waitFor({timeout:3000});current=true;break;
+          const response=await page.goto(url+'?release=4.5&attempt='+attempt,{waitUntil:'domcontentloaded',timeout:15000});
+          if(response?.ok() && await page.locator('[data-motion-version="4.5"]').count()){current=true;break;}
+          await page.locator('[data-motion-version="4.5"]').waitFor({timeout:3000});current=true;break;
         }catch{}
         await new Promise(resolve=>setTimeout(resolve,3000));
       }
-      assert(current,'live site has not published Motion 4.4 or is inaccessible');
+      assert(current,'live site has not published Motion 4.5 or is inaccessible');
       errors.length=0;
     } else await page.goto(url);
-    await page.waitForSelector('[data-motion-version="4.4"]');
+    await page.waitForSelector('[data-motion-version="4.5"]');
     await page.locator('.cookie-banner').getByRole('button',{name:'Ablehnen',exact:true}).click();
     assert.equal(await page.locator('.cookie-banner').count(),0);
     const consent=await page.evaluate(()=>JSON.parse(localStorage.getItem('mademoiselle-consent-v1')));
@@ -190,7 +190,7 @@ try {
       await page.screenshot({path:output+'/'+variant+'-'+id+'.png'});
       console.log(variant+' '+id+': '+start.frame+' -> '+end.frame+' -> '+back.frame);
     }
-    assert.equal(await page.locator('[data-motion-version="4.4"]').count(),1);
+    assert.equal(await page.locator('[data-motion-version="4.5"]').count(),1);
     assert.equal(await page.locator('#start + #fruehstueck').count(),1);
     assert.equal(await page.locator('.gallery-card').count(),3);
     assert.equal(await page.locator('.menu-preview button').count(),3);
@@ -312,8 +312,8 @@ try {
     const booking=page.locator('.reservation-form');
     await page.locator('#reservierung').scrollIntoViewIfNeeded();
     assert.equal(await booking.locator('#reservation-guests option').count(),31);
-    assert(await page.locator('link[rel="icon"][href="/brand/cafe-icon-v2.svg"]').count());
-    for(const asset of ['brand/cafe-icon-v2.svg','brand/cafe-icon-v2-16.png','brand/cafe-icon-v2-32.png','favicon.ico']){
+    assert(await page.locator('link[rel="icon"][href="/brand/cafe-icon-v3-32.png"]').count());
+    for(const asset of ['brand/cafe-icon-v3-64.png','brand/cafe-icon-v3-16.png','brand/cafe-icon-v3-32.png','favicon.ico']){
       const response=await page.request.get(new URL(asset,url).href);
       assert(response.ok()&&response.headers()['content-type']?.startsWith('image/'),'favicon HTTP/MIME '+asset);
     }
@@ -364,7 +364,7 @@ try {
     await page.locator('.motion-switch').click();
     await page.waitForFunction(()=>document.documentElement.dataset.motion==='off');
     await page.emulateMedia({reducedMotion:'reduce'});
-    await page.goto(url+'?release=4.4&default=on');
+    await page.goto(url+'?release=4.5&default=on');
     await page.waitForFunction(()=>document.documentElement.dataset.motion==='on' && document.querySelector('#start canvas')?.classList.contains('is-ready'));
     assert.equal(await page.locator('.motion-switch').getAttribute('aria-pressed'),'true');
     assert.equal(await page.locator('.cookie-banner').count(),0,'consent persists');

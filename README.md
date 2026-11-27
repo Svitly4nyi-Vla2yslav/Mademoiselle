@@ -56,3 +56,7 @@ Motion starts enabled on every fresh load. The visitor can pause all motion with
 ## Motion 4.4 — reservation prototype
 
 Versioned café cup favicon in SVG, PNG and ICO. Final responsive reservation section supports tables for 1–30 guests, events, and food order enquiries. Frontend only: native validation, no API or email, no persisted form data, full reset and explicitly simulated German success message. Privacy draft updated. Existing menu, brand media and motion default-on retained. Browser checks cover 1, 2 and 30 guests, food enquiry, reset and absence of POST/storage changes.
+
+## Motion 4.5 — Parisian favicon
+
+The approved Mademoiselle emblem is resized directly from the generated artwork to 16, 32 and 64 pixel transparent PNGs, with a matching multi-resolution ICO. Versioned links prevent stale browser icons. The main wordmark, mobile install icons, share card, animations and booking form are unchanged.
